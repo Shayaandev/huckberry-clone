@@ -1,0 +1,71 @@
+/* =============================================================================
+1. RESET / BASE STYLES 
+================================================================================*/
+/* everything under this section is to reset browser remove quirks thing */
+/* * is the universal selector */
+/* Border box includes all the padding and the width inside the border unlike other box where it adds up */
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,body{
+    font-family: Georgia, 'Times New Roman', Times, serif ;
+    background-color: #9e996c;
+    color: #333;
+}
+
+/* =============================================================================
+2. VARIABLES
+================================================================================*/
+/* declare variables here */
+:root{
+    /* colours */
+
+    /* typography */
+
+    /* layout/spacing */
+
+    /* Borders & shadows */
+}
+
+/* =============================================================================
+3. GLOBAL ELEMENTS
+================================================================================*/
+/* put the styling for specific elements here */
+
+
+/* =============================================================================
+4. LAYOUT
+================================================================================*/
+body{
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main{
+    /* this basically makes it so that the main elements grows and keeps the footer down
+    flex: 1 = flex grow 1 flex shrink 1 flex basis 0 */
+    flex: 1;
+}
+
+/* =============================================================================
+5. COMPONENTS
+================================================================================*/
+/* put components here: buttons, navbars all that stuff, reusable things */
+
+.navbar ul{
+   list-style: none;
+}
+
+.navbar li{
+    display: inline-block;
+    margin-right: 20px;
+}
+
+/* =============================================================================
+6. UTILITIES
+================================================================================*/
+
