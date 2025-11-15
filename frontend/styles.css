@@ -20,7 +20,7 @@ html,body{
 2. VARIABLES
 ================================================================================*/
 /* declare variables here */
-:root{
+/* :root{ */
     /* colours */
 
     /* typography */
@@ -28,7 +28,7 @@ html,body{
     /* layout/spacing */
 
     /* Borders & shadows */
-}
+/* } */
 
 /* =============================================================================
 3. GLOBAL ELEMENTS
