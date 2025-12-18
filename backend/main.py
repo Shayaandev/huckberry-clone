@@ -5,7 +5,14 @@ from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List
 
+from schemas import (
+    CreateProduct,
+    ProductResponse
+)
+
 from fastapi.middleware.cors import CORSMiddleware
+
+# CORS stuff
 
 app = FastAPI()
 app.add_middleware(
@@ -15,6 +22,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Database stuff
 
 DATABASE_URL = "sqlite:///test.db"
 
@@ -38,26 +47,36 @@ def get_db():
     finally:
         db.close()
 
-class CreateProduct(BaseModel):
-    name: str
-    price: int
+# # Pydantic models
 
-class ProductResponse(BaseModel):
-    id: int
-    name: str
-    price: int
+# class CreateProduct(BaseModel):
+#     name: str
+#     price: int
 
-    class Config:
-        orm_mode = True
+# class ProductResponse(BaseModel):
+#     id: int
+#     name: str
+#     price: int
+
+#     class Config:
+#         orm_mode = True
 
 
+# Routes and enpoints
 # below endpoint doesnt work for some reason
 
 @app.get("/products/")
 def get_products(db: Session = Depends(get_db)):
     return db.query(Products).all()
 
-@app.get("/")
+@app.get("/products/{product_id}")
+def get_product(product_id: int, db: Session = Depends(get_db)):
+    product = db.query(Products).filter(Products.id == product_id).first()
+
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    return product
     
 @app.post("/products/", response_model=ProductResponse)
 def create_product(product: CreateProduct, db: Session = Depends(get_db)):
