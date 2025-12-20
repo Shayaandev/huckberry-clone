@@ -5,9 +5,15 @@ from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List
 
+from jose import jwt, JWTError
+from auth import SECRET_KEY, ALGORITHM, oauth2_scheme, create_access_token
+
 from schemas import (
     CreateProduct,
-    ProductResponse
+    ProductResponse,
+    Token,
+    UserCreate,
+    UserLogin,
 )
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,6 +44,12 @@ class Products(Base):
     name = Column(String, index=True, nullable=False) 
     price = Column(Integer, nullable=False)
 
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    hashed_password = Column(String)
+
 Base.metadata.create_all(bind=engine)
 
 def get_db():
@@ -47,23 +59,24 @@ def get_db():
     finally:
         db.close()
 
-# # Pydantic models
 
-# class CreateProduct(BaseModel):
-#     name: str
-#     price: int
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    db = SessionLocal()
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        if username is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        user = db.query(User).filter(User.username == username).first()
+        if user is None:
+            raise HTTPException(status_code=401, detail="User not found")
+        return user
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    finally:
+        db.close()
 
-# class ProductResponse(BaseModel):
-#     id: int
-#     name: str
-#     price: int
-
-#     class Config:
-#         orm_mode = True
-
-
-# Routes and enpoints
-# below endpoint doesnt work for some reason
+# ============ROUTES====================
 
 @app.get("/products/")
 def get_products(db: Session = Depends(get_db)):
@@ -78,7 +91,7 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
 
     return product
     
-@app.post("/products/", response_model=ProductResponse)
+@app.post("/products/", response_model=ProductResponse, dependencies=[Depends(get_current_user)])
 def create_product(product: CreateProduct, db: Session = Depends(get_db)):
     db_product = Products(
         name = product.name,
@@ -116,3 +129,31 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     db.delete(product)
     db.commit()
     return {"message": "Product deleted successfully"}
+
+# user routes
+
+@app.post("/user", response_model=Token)
+def register(user: UserCreate, db: Session = Depends(get_db)):
+    if db.query(User).filter(User.username == user.username).first():
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    db_user = User(
+        username=user.username,
+        hashed_password=hash_password(user.password)
+    )
+
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+
+    access_token = create_access_token({"sub": db_user.username})
+    return{"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/login", response_model=Token)
+def login(user: UserLogin, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.username == user.username).first()
+    if not db_user or not verify_password(user.password, db_user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    access_token = create_access_token({"sub": db_user.username})
+    return {"access_token": access_token, "token_type": "bearer" }
