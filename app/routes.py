@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
-from database import Products, User, get_current_user, get_db
+from fastapi import APIRouter, Depends, HTTPException, status
+from database import get_db
+from models import Products, User
 from sqlalchemy.orm import Session
 
 from schemas import (
@@ -8,7 +9,11 @@ from schemas import (
     Token,
     UserCreate,
     UserLogin,
+    UserResponse,
 )
+
+from auth import hash_password, verify_password, create_access_token, get_current_user, admin_required
+from fastapi.security import OAuth2PasswordRequestForm
 
 router = APIRouter()
 
@@ -29,7 +34,7 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
 
     return product
     
-@router.post("/products/", response_model=ProductResponse, dependencies=[Depends(get_current_user)])
+@router.post("/products/", response_model=ProductResponse, dependencies=[Depends(admin_required)])
 def create_product(product: CreateProduct, db: Session = Depends(get_db)):
     db_product = Products(
         name = product.name,
@@ -56,7 +61,6 @@ def update_product(product_id: int, updated: CreateProduct, db: Session = Depend
     db.refresh(product)
     return product
     
-
 @router.delete("/products/{product_id}")
 def delete_product(product_id: int, db: Session = Depends(get_db)):
     product = db.query(Products).filter(Products.id == product_id).first()
@@ -68,7 +72,9 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Product deleted successfully"}
 
-@router.post("/user", response_model=Token)
+# USER ROUTES
+
+@router.post("/auth/register", response_model=Token)
 def register(user: UserCreate, db: Session = Depends(get_db)):
     if db.query(User).filter(User.username == user.username).first():
         raise HTTPException(status_code=400, detail="Username already exists")
@@ -85,11 +91,36 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     access_token = create_access_token({"sub": db_user.username})
     return{"access_token": access_token, "token_type": "bearer"}
 
-@router.post("/login", response_model=Token)
-def login(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.username == user.username).first()
-    if not db_user or not verify_password(user.password, db_user.hashed_password):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    access_token = create_access_token({"sub": db_user.username})
-    return {"access_token": access_token, "token_type": "bearer" }
+@router.post("/auth/login", response_model=Token)
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(
+        User.username == form_data.username
+    ).first()
+
+    if not user or not verify_password(
+        form_data.password,
+        user.hashed_password
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
+        )
+
+    access_token = create_access_token(
+        data={"sub": user.username}
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
+
+@router.get("/users", response_model=list[UserResponse])
+def get_all_users(
+    db: Session = Depends(get_db),
+    # _: User = Depends(admin_required)  uncomment when you get the swagger auth thing working
+):
+    return db.query(User).all()

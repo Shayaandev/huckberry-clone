@@ -1,7 +1,7 @@
-from main import Base, engine, SessionLocal
-from main import Products
 
-Base.metadata.create_all(bind=engine)
+from database import SessionLocal
+from models import Products
+
 db = SessionLocal()
 
 products = [
