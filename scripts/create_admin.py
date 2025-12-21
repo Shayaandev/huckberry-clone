@@ -6,6 +6,9 @@
 from models import User
 from database import SessionLocal
 from auth import hash_password
+from database import Base, engine
+
+# Base.metadata.create_all(bind=engine)
 
 db = SessionLocal()
 
@@ -18,3 +21,5 @@ admin = User(
 db.add(admin)
 db.commit()
 db.close()
+
+print("admin added to DB")
