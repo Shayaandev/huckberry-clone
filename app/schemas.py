@@ -18,7 +18,7 @@ class ProductResponse(BaseModel):
     image_url: str | None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # ---------------- USER SCHEMAS ----------------
@@ -41,7 +41,7 @@ class UserResponse(BaseModel):
     is_admin: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # ---------------- CART SCHEMAS ----------------
@@ -52,7 +52,7 @@ class CartProduct(BaseModel):
     price: float
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class CartItemResponse(BaseModel):
     product: CartProduct
@@ -60,14 +60,14 @@ class CartItemResponse(BaseModel):
     subtotal: float
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class CartResponse(BaseModel):
     items: List[CartItemResponse]
     total: float
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class AddToCart(BaseModel):
     id: int

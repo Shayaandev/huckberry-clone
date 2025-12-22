@@ -13,11 +13,13 @@ from schemas import (
 from auth import hash_password, verify_password, create_access_token, get_current_user, admin_required
 from fastapi import UploadFile, File
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import OAuth2PasswordRequestForm
 # app.mount("/static", StaticFiles(directory="static"), name="static")
 
 router = APIRouter()
 
-# ---------------------- HELPER FUNCTIONS ----------------------
+# ================================ HELPER FUNCTIONS ======================================
+# moved here from cart.py
 
 def get_or_create_cart(db: Session, user_id: int):
     cart = db.query(Cart).filter(Cart.user_id == user_id).first()
@@ -28,7 +30,7 @@ def get_or_create_cart(db: Session, user_id: int):
         db.refresh(cart)
     return cart
 
-# ---------------------- PRODUCT ROUTES -----------------------
+# ================================ PRODUCT ROUTES =======================================
 
 @router.get("/", tags=["General"])
 def read_root():
@@ -67,13 +69,32 @@ def create_product(
     return product
 
 @router.put("/products/{product_id}", response_model=ProductResponse, dependencies=[Depends(admin_required)], tags=["Products"])
-def update_product(product_id: int, updated: CreateProduct, db: Session = Depends(get_db)):
+def update_product(
+    product_id: int,
+    name: str,
+    price: float,
+    stock: int = 0,
+    image: UploadFile | None = File(None),
+    db: Session = Depends(get_db),
+):
     product = db.query(Products).filter(Products.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    update_data = updated.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(product, key, value)
+    
+    if name is not None:
+            product.name = name
+    if price is not None:
+            product.price = price
+    if stock is not None:
+            product.stock = stock
+
+    if image:
+        file_location = f"static/images/{image.filename}"
+        with open(file_location, "wb+") as f:
+            f.write(image.file.read())
+
+        product.image_url = f"/static/images/{image.filename}"
+
     db.commit()
     db.refresh(product)
     return product
@@ -87,7 +108,7 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Product deleted successfully"}
 
-# ---------------------- USER ROUTES --------------------------
+# ======================================= USER ROUTES ==============================================
 
 @router.post("/auth/register", response_model=Token, tags=["Auth"])
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -104,16 +125,23 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/auth/login", response_model=Token, tags=["Auth"])
-def login(form_data: UserLogin, db: Session = Depends(get_db)):
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
     access_token = create_access_token({"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.get("/users", response_model=list[UserResponse], dependencies=[Depends(admin_required)], tags=["Admin"])
-def get_all_users(db: Session = Depends(get_db)):
-    return db.query(User).all()
+@router.get("/users", response_model=list[UserResponse])
+def get_all_users(
+    db: Session = Depends(get_db),
+    # _: User = Depends(admin_required)  uncomment when you get the swagger auth thing working
+):
+     return db.query(User).all()
 
 @router.delete("/users/{user_id}", dependencies=[Depends(admin_required)], tags=["Admin"])
 def delete_user(user_id: int, db: Session = Depends(get_db)):
@@ -124,8 +152,10 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "User deleted successfully"}
 
-# ---------------------- CART ROUTES --------------------------
 
+# ====================================== CART ROUTES =============================================
+
+# works
 @router.post("/cart/add", tags=["Cart"])
 def add_to_cart(data: AddToCart, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     cart = get_or_create_cart(db, user.id)
@@ -167,42 +197,85 @@ def change_quantity(product_id: int, data: UpdateQuantity, db: Session = Depends
     db.commit()
     return {"message": "Quantity updated"}
 
+# doesnt work
 @router.get("/cart", response_model=CartResponse, tags=["Cart"])
 def get_cart(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     cart = get_or_create_cart(db, user.id)
     items = db.query(CartItem).options(joinedload(CartItem.product)).filter(CartItem.cart_id == cart.id).all()
+    
     cart_items = []
     total = 0
+    
     for item in items:
+        # skip items with missing products
+        if not item.product:
+            continue
+        
         subtotal = item.quantity * item.product.price
         total += subtotal
-        cart_items.append(CartItemResponse(product=item.product, quantity=item.quantity, subtotal=subtotal))
-    return {"items": cart_items, "total": total}
+        cart_items.append(
+            CartItemResponse(
+                product=item.product,
+                quantity=item.quantity,
+                subtotal=subtotal
+            )
+        )
+    
+    return CartResponse(items=cart_items, total=total)
 
-# ---------------------- CHECKOUT --------------------------
+
+# ====================================== CHECKOUT ===============================================
 
 @router.post("/checkout", tags=["Cart"])
 def checkout(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    cart = get_or_create_cart(db, user.id)
-    if not cart.items:
+    # Get user's cart
+    cart = db.query(Cart).filter(Cart.user_id == user.id).first()
+    if not cart or not cart.items:
         raise HTTPException(status_code=400, detail="Cart is empty")
 
+    # Check stock availability
     for item in cart.items:
+        if not item.product:
+            raise HTTPException(status_code=400, detail=f"Product with id {item.product_id} does not exist")
         if item.quantity > item.product.stock:
-            raise HTTPException(status_code=400, detail=f"Not enough stock for {item.product.name}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Not enough stock for {item.product.name}"
+            )
 
     try:
-        # Deduct stock and clear cart
+        # Calculate total
+        total = sum(item.quantity * item.product.price for item in cart.items)
+
+        # Create Order
+        order = Order(user_id=user.id, total=total)
+        db.add(order)
+        db.flush()  # Assigns order.id without committing yet
+
+        # Create OrderItems and deduct stock
         for item in cart.items:
+            order_item = OrderItem(
+                order_id=order.id,
+                product_name=item.product.name,
+                product_price=item.product.price,
+                quantity=item.quantity
+            )
+            db.add(order_item)
+
+            # Deduct stock
             item.product.stock -= item.quantity
+
+            # Remove item from cart
             db.delete(item)
 
         db.commit()
+        db.refresh(order)
+
     except SQLAlchemyError:
         db.rollback()
         raise HTTPException(status_code=500, detail="Checkout failed")
 
-    return {"detail": "Purchase successful"}
+    return {"detail": "Purchase successful", "order_id": order.id}
 
 @router.get("/orders/history", response_model=list[OrderResponse], tags=["Orders"])
 def get_purchase_history(
