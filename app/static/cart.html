@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cart</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+        button { padding: 5px 10px; }
+    </style>
+</head>
+<body>
+<h2>Your Cart</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Product</th><th>Price</th><th>Quantity</th><th>Subtotal</th><th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="cart-body"></tbody>
+</table>
+<h3>Total: $<span id="total">0</span></h3>
+<button onclick="checkout()">Checkout</button>
+
+<script>
+const API_URL = "";
+
+async function loadCart() {
+    const token = localStorage.getItem('token');
+    if(!token) { alert("Please login"); return; }
+
+    const res = await fetch(`${API_URL}/cart`, { headers: { "Authorization": `Bearer ${token}` } });
+    const data = await res.json();
+    const tbody = document.getElementById('cart-body');
+    tbody.innerHTML = '';
+    let total = 0;
+
+    data.items.forEach(item => {
+        total += item.subtotal;
+        tbody.innerHTML += `
+            <tr>
+                <td>${item.product.name}</td>
+                <td>$${item.product.price}</td>
+                <td><input type="number" min="1" value="${item.quantity}" onchange="updateQuantity(${item.product.id}, this.value)"></td>
+                <td>$${item.subtotal}</td>
+                <td><button onclick="removeItem(${item.product.id})">Remove</button></td>
+            </tr>
+        `;
+    });
+    document.getElementById('total').innerText = total.toFixed(2);
+}
+
+async function updateQuantity(productId, quantity) {
+    const token = localStorage.getItem('token');
+    await fetch(`${API_URL}/cart/${productId}`, {
+        method: 'PATCH',
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ quantity: parseInt(quantity) })
+    });
+    loadCart();
+}
+
+async function removeItem(productId) {
+    const token = localStorage.getItem('token');
+    await fetch(`${API_URL}/cart/remove/${productId}`, {
+        method: 'DELETE',
+        headers: { "Authorization": `Bearer ${token}` }
+    });
+    loadCart();
+}
+
+async function checkout() {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_URL}/checkout`, {
+        method: 'POST',
+        headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    alert(data.detail || "Error");
+    loadCart();
+}
+
+loadCart();
+</script>
+</body>
+</html>

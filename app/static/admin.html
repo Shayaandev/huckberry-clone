@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Panel</title>
+<style>
+body { font-family: Arial; padding: 20px; }
+input, button { padding: 5px; margin: 5px 0; }
+table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+</style>
+</head>
+<body>
+<h2>Admin Panel</h2>
+
+<h3>Add Product</h3>
+<form id="add-product-form">
+    <input type="text" placeholder="Name" id="product-name" required>
+    <input type="number" placeholder="Price" id="product-price" required>
+    <input type="number" placeholder="Stock" id="product-stock" required>
+    <input type="file" id="product-image">
+    <button type="submit">Add Product</button>
+</form>
+
+<h3>All Users</h3>
+<table id="users-table">
+    <tr><th>ID</th><th>Username</th><th>Action</th></tr>
+</table>
+
+<script>
+const API_URL = "";
+const token = localStorage.getItem('token');
+
+async function loadUsers() {
+    const res = await fetch(`${API_URL}/users`, { headers: { "Authorization": `Bearer ${token}` } });
+    const users = await res.json();
+    const table = document.getElementById('users-table');
+    table.innerHTML = '<tr><th>ID</th><th>Username</th><th>Action</th></tr>';
+    users.forEach(user => {
+        table.innerHTML += `
+            <tr>
+                <td>${user.id}</td>
+                <td>${user.username}</td>
+                <td><button onclick="deleteUser(${user.id})">Delete</button></td>
+            </tr>
+        `;
+    });
+}
+
+async function deleteUser(userId) {
+    await fetch(`${API_URL}/users/${userId}`, { method: 'DELETE', headers: { "Authorization": `Bearer ${token}` } });
+    loadUsers();
+}
+
+document.getElementById('add-product-form').onsubmit = async e => {
+    e.preventDefault();
+    const name = document.getElementById('product-name').value;
+    const price = parseFloat(document.getElementById('product-price').value);
+    const stock = parseInt(document.getElementById('product-stock').value);
+    const imageFile = document.getElementById('product-image').files[0];
+
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('price', price);
+    formData.append('stock', stock);
+    if(imageFile) formData.append('image', imageFile);
+
+    await fetch(`${API_URL}/products/`, {
+        method: 'POST',
+        headers: { "Authorization": `Bearer ${token}` },
+        body: formData
+    });
+
+    alert("Product added");
+}
+
+loadUsers();
+</script>
+</body>
+</html>

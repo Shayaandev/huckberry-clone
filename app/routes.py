@@ -13,6 +13,7 @@ from schemas import (
 from auth import hash_password, verify_password, create_access_token, get_current_user, admin_required
 from fastapi import UploadFile, File
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
 # app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -31,10 +32,6 @@ def get_or_create_cart(db: Session, user_id: int):
     return cart
 
 # ================================ PRODUCT ROUTES =======================================
-
-@router.get("/", tags=["General"])
-def read_root():
-    return {"message": "Hello, world!"}
 
 @router.get("/products/", response_model=list[ProductResponse], tags=["Products"])
 def get_products(db: Session = Depends(get_db)):
@@ -129,6 +126,7 @@ def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
+    print(form_data.username, form_data.password)
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -136,7 +134,14 @@ def login(
     access_token = create_access_token({"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.get("/users", response_model=list[UserResponse])
+@router.get("/auth/me", tags=["Admin"])
+def read_current_user(user: User = Depends(get_current_user)):
+    return{
+        "username": user.username,
+        "id": user.id,
+    }
+
+@router.get("/users", response_model=list[UserResponse], tags=["Admin"])
 def get_all_users(
     db: Session = Depends(get_db),
     # _: User = Depends(admin_required)  uncomment when you get the swagger auth thing working
@@ -284,3 +289,27 @@ def get_purchase_history(
 ):
     orders = db.query(Order).filter(Order.user_id == user.id).options(joinedload(Order.items)).all()
     return orders
+
+# ============================== FRONTEND ROUTES ==========================
+
+@router.get("/", tags=["frontend"])
+def index():
+    return FileResponse("static/index.html")
+
+@router.get("/cart-page", tags=["frontend"])
+def cart_page():
+    return FileResponse("static/cart.html")
+
+@router.get("/orders-page", tags=["frontend"])
+def orders_page():
+    return FileResponse("static/orders.html")
+
+@router.get("/login-page", tags=["frontend"])
+def login_page():
+    return FileResponse("static/login.html")
+
+@router.get("/admin-page", 
+            dependencies=[Depends(admin_required)],
+            tags=["frontend",])
+def admin_page():
+    return FileResponse("static/admin.html")
