@@ -1,44 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shop - Home</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-        header { padding: 10px; background: #333; color: #fff; display: flex; justify-content: space-between; align-items: center; }
-        header a { color: #fff; margin-left: 15px; text-decoration: none; }
-        .product-list { display: flex; flex-wrap: wrap; gap: 20px; padding: 20px; }
-        .product { border: 1px solid #ccc; padding: 10px; width: 200px; text-align: center; }
-        .product img { max-width: 100%; height: 150px; object-fit: cover; }
-        button { padding: 5px 10px; cursor: pointer; }
-    </style>
+    <link rel="stylesheet" href="static/css/style.css">
 </head>
+
 <body>
-<header>
-    <div><h2>Shop</h2></div>
-    <div>
-        <a href="/cart-page">Cart</a>
-        <a href="/orders-page">Orders</a>
-        <a href="/login-page" id="login-link">Login/Register</a>
-        <a href="#" id="logout-link" style="display:none;">Logout</a>
-        <a href="/admin-page">Admin</a>
+    <header>
+        <div>
+            <h2>Shop</h2>
+        </div>
+        <div>
+            <a href="/cart-page">Cart</a>
+            <a href="/orders-page">Orders</a>
+            <a href="/login-page" id="login-link">Login/Register</a>
+            <a href="#" id="logout-link" style="display:none;">Logout</a>
+            <a href="/admin-page">Admin</a>
+        </div>
+    </header>
+
+    <div class="product-list" id="product-list">
+        <!-- Products will be injected here -->
     </div>
-</header>
 
-<div class="product-list" id="product-list">
-    <!-- Products will be injected here -->
-</div>
+    <script>
+        const API_URL = "";
 
-<script>
-const API_URL = "";
-
-async function loadProducts() {
-    const res = await fetch(`${API_URL}/products/`);
-    const products = await res.json();
-    const container = document.getElementById("product-list");
-    container.innerHTML = '';
-    products.forEach(product => {
-        container.innerHTML += `
+        async function loadProducts() {
+            const res = await fetch(`${API_URL}/products/`);
+            const products = await res.json();
+            const container = document.getElementById("product-list");
+            container.innerHTML = '';
+            products.forEach(product => {
+                container.innerHTML += `
             <div class="product">
                 <img src="${product.image_url || 'https://via.placeholder.com/150'}" alt="${product.name}">
                 <h3>${product.name}</h3>
@@ -48,39 +45,40 @@ async function loadProducts() {
                 <button onclick="addToCart(${product.id})">Add to Cart</button>
             </div>
         `;
-    });
-}
+            });
+        }
 
-async function addToCart(productId) {
-    const qty = parseInt(document.getElementById(`qty-${productId}`).value);
-    const token = localStorage.getItem('token');
-    if(!token) { alert("Please login first"); return; }
+        async function addToCart(productId) {
+            const qty = parseInt(document.getElementById(`qty-${productId}`).value);
+            const token = localStorage.getItem('token');
+            if (!token) { alert("Please login first"); return; }
 
-    const res = await fetch(`${API_URL}/cart/add`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ id: productId, quantity: qty })
-    });
+            const res = await fetch(`${API_URL}/cart/add`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                body: JSON.stringify({ id: productId, quantity: qty })
+            });
 
-    const data = await res.json();
-    if(res.ok) alert("Added to cart");
-    else alert(data.detail || "Error adding to cart");
-}
+            const data = await res.json();
+            if (res.ok) alert("Added to cart");
+            else alert(data.detail || "Error adding to cart");
+        }
 
-loadProducts();
+        loadProducts();
 
-const token = localStorage.getItem('token');
+        const token = localStorage.getItem('token');
 
-if(token) {
-    document.getElementById('login-link').style.display = 'none';
-    document.getElementById('logout-link').style.display = 'inline';
-}
+        if (token) {
+            document.getElementById('login-link').style.display = 'none';
+            document.getElementById('logout-link').style.display = 'inline';
+        }
 
-document.getElementById('logout-link').onclick = () => {
-    localStorage.removeItem('token');
-    alert("Logged out successfully");
-    window.location.reload();
-};
-</script>
+        document.getElementById('logout-link').onclick = () => {
+            localStorage.removeItem('token');
+            alert("Logged out successfully");
+            window.location.reload();
+        };
+    </script>
 </body>
+
 </html>

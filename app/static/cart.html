@@ -1,44 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cart</title>
+    <link rel="stylesheet" href="static/css/style.css">
     <style>
-        body { font-family: Arial; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
-        button { padding: 5px 10px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
     </style>
 </head>
+
 <body>
-<h2>Your Cart</h2>
-<table>
-    <thead>
-        <tr>
-            <th>Product</th><th>Price</th><th>Quantity</th><th>Subtotal</th><th>Actions</th>
-        </tr>
-    </thead>
-    <tbody id="cart-body"></tbody>
-</table>
-<h3>Total: $<span id="total">0</span></h3>
-<button onclick="checkout()">Checkout</button>
 
-<script>
-const API_URL = "";
+    <header>
+        <div>
+            <h2>Cart</h2>
+        </div>
+        <div>
+            <a href="/">Home</a>
+            <a href="/orders-page">Orders</a>
+            <a href="/login-page" id="login-link">Login/Register</a>
+            <a href="#" id="logout-link" style="display:none;">Logout</a>
+            <a href="/admin-page">Admin</a>
+        </div>
+    </header>
 
-async function loadCart() {
-    const token = localStorage.getItem('token');
-    if(!token) { alert("Please login"); return; }
+    <h2>Your Cart</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Subtotal</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="cart-body"></tbody>
+    </table>
+    <h3>Total: $<span id="total">0</span></h3>
+    <button onclick="checkout()">Checkout</button>
 
-    const res = await fetch(`${API_URL}/cart`, { headers: { "Authorization": `Bearer ${token}` } });
-    const data = await res.json();
-    const tbody = document.getElementById('cart-body');
-    tbody.innerHTML = '';
-    let total = 0;
+    <script>
+        const API_URL = "";
 
-    data.items.forEach(item => {
-        total += item.subtotal;
-        tbody.innerHTML += `
+        async function loadCart() {
+            const token = localStorage.getItem('token');
+            if (!token) { alert("Please login"); return; }
+
+            const res = await fetch(`${API_URL}/cart`, { headers: { "Authorization": `Bearer ${token}` } });
+            const data = await res.json();
+            const tbody = document.getElementById('cart-body');
+            tbody.innerHTML = '';
+            let total = 0;
+
+            data.items.forEach(item => {
+                total += item.subtotal;
+                tbody.innerHTML += `
             <tr>
                 <td>${item.product.name}</td>
                 <td>$${item.product.price}</td>
@@ -47,41 +76,42 @@ async function loadCart() {
                 <td><button onclick="removeItem(${item.product.id})">Remove</button></td>
             </tr>
         `;
-    });
-    document.getElementById('total').innerText = total.toFixed(2);
-}
+            });
+            document.getElementById('total').innerText = total.toFixed(2);
+        }
 
-async function updateQuantity(productId, quantity) {
-    const token = localStorage.getItem('token');
-    await fetch(`${API_URL}/cart/${productId}`, {
-        method: 'PATCH',
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ quantity: parseInt(quantity) })
-    });
-    loadCart();
-}
+        async function updateQuantity(productId, quantity) {
+            const token = localStorage.getItem('token');
+            await fetch(`${API_URL}/cart/${productId}`, {
+                method: 'PATCH',
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                body: JSON.stringify({ quantity: parseInt(quantity) })
+            });
+            loadCart();
+        }
 
-async function removeItem(productId) {
-    const token = localStorage.getItem('token');
-    await fetch(`${API_URL}/cart/remove/${productId}`, {
-        method: 'DELETE',
-        headers: { "Authorization": `Bearer ${token}` }
-    });
-    loadCart();
-}
+        async function removeItem(productId) {
+            const token = localStorage.getItem('token');
+            await fetch(`${API_URL}/cart/remove/${productId}`, {
+                method: 'DELETE',
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            loadCart();
+        }
 
-async function checkout() {
-    const token = localStorage.getItem('token');
-    const res = await fetch(`${API_URL}/checkout`, {
-        method: 'POST',
-        headers: { "Authorization": `Bearer ${token}` }
-    });
-    const data = await res.json();
-    alert(data.detail || "Error");
-    loadCart();
-}
+        async function checkout() {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/checkout`, {
+                method: 'POST',
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            const data = await res.json();
+            alert(data.detail || "Error");
+            loadCart();
+        }
 
-loadCart();
-</script>
+        loadCart();
+    </script>
 </body>
+
 </html>

@@ -1,44 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<title>Order History</title>
-<style>
-body { font-family: Arial; padding: 20px; }
-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
-</style>
+    <meta charset="UTF-8">
+    <title>Order History</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="static/css/style.css">
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+    </style>
 </head>
+
 <body>
-<h2>Order History</h2>
-<table>
-    <thead>
-        <tr>
-            <th>Order ID</th><th>Total</th><th>Items</th><th>Date</th>
-        </tr>
-    </thead>
-    <tbody id="orders-body"></tbody>
-</table>
 
-<script>
-const API_URL = "";
-const token = localStorage.getItem('token');
-if(!token) {
-    alert("Please login first");
-    window.location.href = "/login-page";
-}
+    <header>
+        <div>
+            <h2>Order History</h2>
+        </div>
+        <div>
+            <a href="/cart-page">Cart</a>
+            <a href="/orders-page">Orders</a>
+            <a href="/login-page" id="login-link">Login/Register</a>
+            <a href="#" id="logout-link" style="display:none;">Logout</a>
+            <a href="/admin-page">Admin</a>
+        </div>
+    </header>
 
-async function loadOrders() {
-    const res = await fetch(`${API_URL}/orders/history`, {
-        headers: { "Authorization": `Bearer ${token}` }
-    });
-    const orders = await res.json();
-    const tbody = document.getElementById('orders-body');
-    tbody.innerHTML = '';
-    
-    orders.forEach(order => {
-        const itemsList = order.items.map(item => `${item.product_name} (x${item.quantity})`).join(', ');
-        tbody.innerHTML += `
+    <h2>Order History</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Total</th>
+                <th>Items</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody id="orders-body"></tbody>
+    </table>
+
+    <script>
+        const API_URL = "";
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert("Please login first");
+            window.location.href = "/login-page";
+        }
+
+        async function loadOrders() {
+            const res = await fetch(`${API_URL}/orders/history`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            const orders = await res.json();
+            const tbody = document.getElementById('orders-body');
+            tbody.innerHTML = '';
+
+            orders.forEach(order => {
+                const itemsList = order.items.map(item => `${item.product_name} (x${item.quantity})`).join(', ');
+                tbody.innerHTML += `
             <tr>
                 <td>${order.id}</td>
                 <td>$${order.total.toFixed(2)}</td>
@@ -46,10 +81,11 @@ async function loadOrders() {
                 <td>${new Date(order.created_at).toLocaleString()}</td>
             </tr>
         `;
-    });
-}
+            });
+        }
 
-loadOrders();
-</script>
+        loadOrders();
+    </script>
 </body>
+
 </html>

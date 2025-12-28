@@ -1,75 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<title>Login/Register</title>
-<style>
-body { font-family: Arial; padding: 20px; }
-form { margin-bottom: 20px; }
-input { margin: 5px 0; padding: 5px; width: 200px; }
-button { padding: 5px 10px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login/Register</title>
+    <link rel="stylesheet" href="static/css/style.css">
+    <style>
+        form {
+            margin-bottom: 20px;
+        }
+
+        input {
+            margin: 5px 0;
+            padding: 5px;
+            width: 200px;
+        }
+    </style>
 </head>
+
 <body>
 
-<h2>Login</h2>
-<form id="login-form">
-    <input type="text" placeholder="Username" id="login-username" required><br>
-    <input type="password" placeholder="Password" id="login-password" required><br>
-    <button type="submit">Login</button>
-</form>
+    <header>
+        <div>
+            <h2>Login or Register</h2>
+        </div>
+        <div>
+            <a href="/">Home</a>
+            <a href="/cart-page">Cart</a>
+            <a href="/orders-page">Orders</a>
+            <a href="/admin-page">Admin</a>
+        </div>
+    </header>
 
-<h2>Register</h2>
-<form id="register-form">
-    <input type="text" placeholder="Username" id="register-username" required><br>
-    <input type="password" placeholder="Password" id="register-password" required><br>
-    <button type="submit">Register</button>
-</form>
+    <h2>Login</h2>
+    <form id="login-form">
+        <input type="text" placeholder="Username" id="login-username" required><br>
+        <input type="password" placeholder="Password" id="login-password" required><br>
+        <button type="submit">Login</button>
+    </form>
 
-<script>
-const API_URL = "";
+    <h2>Register</h2>
+    <form id="register-form">
+        <input type="text" placeholder="Username" id="register-username" required><br>
+        <input type="password" placeholder="Password" id="register-password" required><br>
+        <button type="submit">Register</button>
+    </form>
 
-document.getElementById('login-form').onsubmit = async e => {
-    e.preventDefault();
-    const username = document.getElementById('login-username').value;
-    const password = document.getElementById('login-password').value;
+    <script>
+        const API_URL = "";
 
-    const res = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ username, password })
-    });
+        document.getElementById('login-form').onsubmit = async e => {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
 
-    const data = await res.json();
-    if(res.ok) {
-        localStorage.setItem('token', data.access_token);
-        alert("Login successful");
-        window.location.href = "/";
-    } else {
-        alert(data.detail);
-    }
-};
+            const res = await fetch(`${API_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ username, password })
+            });
 
-document.getElementById('register-form').onsubmit = async e => {
-    e.preventDefault();
-    const username = document.getElementById('register-username').value;
-    const password = document.getElementById('register-password').value;
+            const data = await res.json();
+            if (res.ok) {
+                localStorage.setItem('token', data.access_token);
+                alert("Login successful");
+                window.location.href = "/";
+            } else {
+                alert(data.detail);
+            }
+        };
 
-    const res = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-    });
+        document.getElementById('register-form').onsubmit = async e => {
+            e.preventDefault();
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
 
-    const data = await res.json();
-    if(res.ok) {
-        localStorage.setItem('token', data.access_token);
-        alert("Registered successfully");
-        window.location.href = "/";
-    } else {
-        alert(data.detail);
-    }
-};
-</script>
+            const res = await fetch(`${API_URL}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                localStorage.setItem('token', data.access_token);
+                alert("Registered successfully");
+                window.location.href = "/";
+            } else {
+                alert(data.detail);
+            }
+        };
+    </script>
 </body>
+
 </html>

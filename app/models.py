@@ -32,7 +32,9 @@ class Cart(Base):
     user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
 
     user = relationship("User", back_populates="cart")
-    items = relationship("CartItem", back_populates="cart", cascade="all, delete-orphan")
+    items = relationship(
+        "CartItem", back_populates="cart", cascade="all, delete-orphan"
+    )
 
 
 class CartItem(Base):
@@ -46,6 +48,7 @@ class CartItem(Base):
     cart = relationship("Cart", back_populates="items")
     product = relationship("Products")
 
+
 class Order(Base):
     __tablename__ = "orders"
 
@@ -55,7 +58,9 @@ class Order(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", backref="orders")
-    items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    items = relationship(
+        "OrderItem", back_populates="order", cascade="all, delete-orphan"
+    )
 
 
 class OrderItem(Base):

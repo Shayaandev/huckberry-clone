@@ -5,22 +5,39 @@ from sqlalchemy.exc import SQLAlchemyError
 from database import get_db
 from models import Products, User, Cart, CartItem, Order, OrderItem
 from schemas import (
-    CreateProduct, ProductResponse,
-    Token, UserCreate, UserLogin, UserResponse,
-    AddToCart, UpdateQuantity, CartItemResponse, CartResponse, CartProduct,
-    OrderResponse,OrderItemResponse
+    CreateProduct,
+    ProductResponse,
+    Token,
+    UserCreate,
+    UserLogin,
+    UserResponse,
+    AddToCart,
+    UpdateQuantity,
+    CartItemResponse,
+    CartResponse,
+    CartProduct,
+    OrderResponse,
+    OrderItemResponse,
 )
-from auth import hash_password, verify_password, create_access_token, get_current_user, admin_required
+from auth import (
+    hash_password,
+    verify_password,
+    create_access_token,
+    get_current_user,
+    admin_required,
+)
 from fastapi import UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
+
 # app.mount("/static", StaticFiles(directory="static"), name="static")
 
 router = APIRouter()
 
 # ================================ HELPER FUNCTIONS ======================================
 # moved here from cart.py
+
 
 def get_or_create_cart(db: Session, user_id: int):
     cart = db.query(Cart).filter(Cart.user_id == user_id).first()
@@ -31,11 +48,14 @@ def get_or_create_cart(db: Session, user_id: int):
         db.refresh(cart)
     return cart
 
+
 # ================================ PRODUCT ROUTES =======================================
+
 
 @router.get("/products/", response_model=list[ProductResponse], tags=["Products"])
 def get_products(db: Session = Depends(get_db)):
     return db.query(Products).all()
+
 
 @router.get("/products/{product_id}", response_model=ProductResponse, tags=["Products"])
 def get_product(product_id: int, db: Session = Depends(get_db)):
@@ -44,7 +64,13 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Product not found")
     return product
 
-@router.post("/products/", response_model=ProductResponse, dependencies=[Depends(admin_required)], tags=["Products"])
+
+@router.post(
+    "/products/",
+    response_model=ProductResponse,
+    dependencies=[Depends(admin_required)],
+    tags=["Products"],
+)
 def create_product(
     name: str,
     price: float,
@@ -65,7 +91,13 @@ def create_product(
     db.refresh(product)
     return product
 
-@router.put("/products/{product_id}", response_model=ProductResponse, dependencies=[Depends(admin_required)], tags=["Products"])
+
+@router.put(
+    "/products/{product_id}",
+    response_model=ProductResponse,
+    dependencies=[Depends(admin_required)],
+    tags=["Products"],
+)
 def update_product(
     product_id: int,
     name: str,
@@ -77,13 +109,13 @@ def update_product(
     product = db.query(Products).filter(Products.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    
+
     if name is not None:
-            product.name = name
+        product.name = name
     if price is not None:
-            product.price = price
+        product.price = price
     if stock is not None:
-            product.stock = stock
+        product.stock = stock
 
     if image:
         file_location = f"static/images/{image.filename}"
@@ -96,7 +128,10 @@ def update_product(
     db.refresh(product)
     return product
 
-@router.delete("/products/{product_id}", dependencies=[Depends(admin_required)], tags=["Products"])
+
+@router.delete(
+    "/products/{product_id}", dependencies=[Depends(admin_required)], tags=["Products"]
+)
 def delete_product(product_id: int, db: Session = Depends(get_db)):
     product = db.query(Products).filter(Products.id == product_id).first()
     if not product:
@@ -105,21 +140,21 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Product deleted successfully"}
 
+
 # ======================================= USER ROUTES ==============================================
+
 
 @router.post("/auth/register", response_model=Token, tags=["Auth"])
 def register(user: UserCreate, db: Session = Depends(get_db)):
     if db.query(User).filter(User.username == user.username).first():
         raise HTTPException(status_code=400, detail="Username already exists")
-    db_user = User(
-        username=user.username,
-        hashed_password=hash_password(user.password)
-    )
+    db_user = User(username=user.username, hashed_password=hash_password(user.password))
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     access_token = create_access_token({"sub": db_user.username})
     return {"access_token": access_token, "token_type": "bearer"}
+
 
 @router.post("/auth/login", response_model=Token, tags=["Auth"])
 def login(
@@ -134,21 +169,26 @@ def login(
     access_token = create_access_token({"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
+
 @router.get("/auth/me", tags=["Admin"])
 def read_current_user(user: User = Depends(get_current_user)):
-    return{
+    return {
         "username": user.username,
         "id": user.id,
     }
+
 
 @router.get("/users", response_model=list[UserResponse], tags=["Admin"])
 def get_all_users(
     db: Session = Depends(get_db),
     # _: User = Depends(admin_required)  uncomment when you get the swagger auth thing working
 ):
-     return db.query(User).all()
+    return db.query(User).all()
 
-@router.delete("/users/{user_id}", dependencies=[Depends(admin_required)], tags=["Admin"])
+
+@router.delete(
+    "/users/{user_id}", dependencies=[Depends(admin_required)], tags=["Admin"]
+)
 def delete_user(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -160,14 +200,20 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
 
 # ====================================== CART ROUTES =============================================
 
+
 # works
 @router.post("/cart/add", tags=["Cart"])
-def add_to_cart(data: AddToCart, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def add_to_cart(
+    data: AddToCart,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     cart = get_or_create_cart(db, user.id)
-    item = db.query(CartItem).filter(
-        CartItem.cart_id == cart.id,
-        CartItem.product_id == data.id
-    ).first()
+    item = (
+        db.query(CartItem)
+        .filter(CartItem.cart_id == cart.id, CartItem.product_id == data.id)
+        .first()
+    )
     if item:
         item.quantity += data.quantity
     else:
@@ -176,60 +222,78 @@ def add_to_cart(data: AddToCart, db: Session = Depends(get_db), user: User = Dep
     db.commit()
     return {"message": "Item added to cart"}
 
+
 @router.delete("/cart/remove/{product_id}", tags=["Cart"])
-def remove_from_cart(product_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def remove_from_cart(
+    product_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     cart = get_or_create_cart(db, user.id)
-    item = db.query(CartItem).filter(
-        CartItem.cart_id == cart.id,
-        CartItem.product_id == product_id
-    ).first()
+    item = (
+        db.query(CartItem)
+        .filter(CartItem.cart_id == cart.id, CartItem.product_id == product_id)
+        .first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Item not in cart")
     db.delete(item)
     db.commit()
     return {"message": "Item removed from cart"}
 
+
 @router.patch("/cart/{product_id}", tags=["Cart"])
-def change_quantity(product_id: int, data: UpdateQuantity, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def change_quantity(
+    product_id: int,
+    data: UpdateQuantity,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     cart = get_or_create_cart(db, user.id)
-    item = db.query(CartItem).filter(
-        CartItem.cart_id == cart.id,
-        CartItem.product_id == product_id
-    ).first()
+    item = (
+        db.query(CartItem)
+        .filter(CartItem.cart_id == cart.id, CartItem.product_id == product_id)
+        .first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Item not in cart")
     item.quantity = data.quantity
     db.commit()
     return {"message": "Quantity updated"}
 
+
 # doesnt work
 @router.get("/cart", response_model=CartResponse, tags=["Cart"])
 def get_cart(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     cart = get_or_create_cart(db, user.id)
-    items = db.query(CartItem).options(joinedload(CartItem.product)).filter(CartItem.cart_id == cart.id).all()
-    
+    items = (
+        db.query(CartItem)
+        .options(joinedload(CartItem.product))
+        .filter(CartItem.cart_id == cart.id)
+        .all()
+    )
+
     cart_items = []
     total = 0
-    
+
     for item in items:
         # skip items with missing products
         if not item.product:
             continue
-        
+
         subtotal = item.quantity * item.product.price
         total += subtotal
         cart_items.append(
             CartItemResponse(
-                product=item.product,
-                quantity=item.quantity,
-                subtotal=subtotal
+                product=item.product, quantity=item.quantity, subtotal=subtotal
             )
         )
-    
+
     return CartResponse(items=cart_items, total=total)
 
 
 # ====================================== CHECKOUT ===============================================
+
 
 @router.post("/checkout", tags=["Cart"])
 def checkout(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
@@ -241,11 +305,13 @@ def checkout(db: Session = Depends(get_db), user: User = Depends(get_current_use
     # Check stock availability
     for item in cart.items:
         if not item.product:
-            raise HTTPException(status_code=400, detail=f"Product with id {item.product_id} does not exist")
-        if item.quantity > item.product.stock:
             raise HTTPException(
                 status_code=400,
-                detail=f"Not enough stock for {item.product.name}"
+                detail=f"Product with id {item.product_id} does not exist",
+            )
+        if item.quantity > item.product.stock:
+            raise HTTPException(
+                status_code=400, detail=f"Not enough stock for {item.product.name}"
             )
 
     try:
@@ -263,7 +329,7 @@ def checkout(db: Session = Depends(get_db), user: User = Depends(get_current_use
                 order_id=order.id,
                 product_name=item.product.name,
                 product_price=item.product.price,
-                quantity=item.quantity
+                quantity=item.quantity,
             )
             db.add(order_item)
 
@@ -282,34 +348,50 @@ def checkout(db: Session = Depends(get_db), user: User = Depends(get_current_use
 
     return {"detail": "Purchase successful", "order_id": order.id}
 
+
 @router.get("/orders/history", response_model=list[OrderResponse], tags=["Orders"])
 def get_purchase_history(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    orders = db.query(Order).filter(Order.user_id == user.id).options(joinedload(Order.items)).all()
+    orders = (
+        db.query(Order)
+        .filter(Order.user_id == user.id)
+        .options(joinedload(Order.items))
+        .all()
+    )
     return orders
 
+
 # ============================== FRONTEND ROUTES ==========================
+
 
 @router.get("/", tags=["frontend"])
 def index():
     return FileResponse("static/index.html")
 
+
 @router.get("/cart-page", tags=["frontend"])
 def cart_page():
     return FileResponse("static/cart.html")
+
 
 @router.get("/orders-page", tags=["frontend"])
 def orders_page():
     return FileResponse("static/orders.html")
 
+
 @router.get("/login-page", tags=["frontend"])
 def login_page():
     return FileResponse("static/login.html")
 
-@router.get("/admin-page", 
-            dependencies=[Depends(admin_required)],
-            tags=["frontend",])
+
+@router.get(
+    "/admin-page",
+    # dependencies=[Depends(admin_required)],
+    tags=[
+        "frontend",
+    ],
+)
 def admin_page():
     return FileResponse("static/admin.html")

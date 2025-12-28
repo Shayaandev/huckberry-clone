@@ -7,92 +7,55 @@ body {
 }
 
 header {
+  padding: 10px;
+  background: #333;
+  color: #fff;
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+
+header a {
+  color: #fff;
+  margin-left: 15px;
+  text-decoration: none;
+}
+
+
+/* ---------- PRODUCTS GRID ---------- */
+
+.product-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 20px;
+}
+
+.product {
+  border: 1px solid #ccc;
+  padding: 10px;
+width: 200px;
+  text-align: center;
+}
+
+.product img {
+  max-width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+button {
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+/* ----------------- LOGIN -------------------- */
+
+form {
   margin-bottom: 20px;
 }
 
-.cart-link {
-  text-decoration: none;
-  font-size: 24px;
-}
+input {
 
-/* ---------- PRODUCTS GRID ---------- */
-.products-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
-}
-
-/* ---------- PRODUCT CARD ---------- */
-.product-card {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 0 8px rgba(0,0,0,0.1);
-  padding: 10px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.2s;
-}
-
-.product-card:hover {
-  transform: translateY(-5px);
-}
-
-/* ---------- IMAGE ---------- */
-.product-image {
-  width: 200px;
-  height: 200px;
-  margin: 0 auto 10px;
-  overflow: hidden;
-  border-radius: 8px;
-  background: #eee;
-}
-
-.product-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* ---------- PRODUCT INFO ---------- */
-.product-name {
-  font-weight: bold;
-  margin: 5px 0;
-}
-
-.product-price {
-  color: #333;
-  margin-bottom: 10px;
-  font-size: 18px;
-}
-
-/* ---------- BUTTON ---------- */
-.add-to-cart-btn {
-  background: #007bff;
-  color: #fff;
-  border: none;
-  padding: 8px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.add-to-cart-btn:hover {
-  background: #0056b3;
-}
-
-/* ---------- RESPONSIVE ---------- */
-@media (max-width: 600px) {
-  .products-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  }
-
-  .product-image {
-    width: 150px;
-    height: 150px;
-  }
 }

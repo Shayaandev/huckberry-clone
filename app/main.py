@@ -3,6 +3,7 @@ import routes
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
 from fastapi.staticfiles import StaticFiles
+
 # FastAPI stuff
 
 app = FastAPI()
