@@ -14,8 +14,9 @@ Python3 and pip
 python -m venv .venv
 pip install -r requirements.txt
 ```
-- Start the ASGI server
+- Start the ASGI server (cd into the app folder first)
 ```bash
+cd app
 uvicorn main:app --reload
 ```
 - On your browser open http://localhost:8000 or http://127.0.0.1:8000

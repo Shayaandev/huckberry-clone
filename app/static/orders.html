@@ -38,7 +38,6 @@
             <a href="/orders-page">Orders</a>
             <a href="/login-page" id="login-link">Login/Register</a>
             <a href="#" id="logout-link" style="display:none;">Logout</a>
-            <a href="/admin-page">Admin</a>
         </div>
     </header>
 
@@ -54,9 +53,9 @@
         </thead>
         <tbody id="orders-body"></tbody>
     </table>
-
+    <script src="static/js/config.js"></script>
+    <script src = "static/js/auth.js"></script>
     <script>
-        const API_URL = "";
         const token = localStorage.getItem('token');
         if (!token) {
             alert("Please login first");

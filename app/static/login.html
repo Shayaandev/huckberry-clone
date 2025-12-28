@@ -29,7 +29,6 @@
             <a href="/">Home</a>
             <a href="/cart-page">Cart</a>
             <a href="/orders-page">Orders</a>
-            <a href="/admin-page">Admin</a>
         </div>
     </header>
 
@@ -46,10 +45,8 @@
         <input type="password" placeholder="Password" id="register-password" required><br>
         <button type="submit">Register</button>
     </form>
-
+    <script src="static/js/config.js"></script>
     <script>
-        const API_URL = "";
-
         document.getElementById('login-form').onsubmit = async e => {
             e.preventDefault();
             const username = document.getElementById('login-username').value;

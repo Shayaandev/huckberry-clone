@@ -32,7 +32,6 @@
             <a href="/orders-page">Orders</a>
             <a href="/login-page" id="login-link">Login/Register</a>
             <a href="#" id="logout-link" style="display:none;">Logout</a>
-            <a href="/admin-page">Admin</a>
         </div>
     </header>
 
@@ -52,9 +51,14 @@
     <h3>Total: $<span id="total">0</span></h3>
     <button onclick="checkout()">Checkout</button>
 
+    <script src="static/js/config.js"></script>
+    <script src = "static/js/auth.js"></script>
     <script>
-        const API_URL = "";
-
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert("Please login first");
+            window.location.href = "/login-page";
+        }
         async function loadCart() {
             const token = localStorage.getItem('token');
             if (!token) { alert("Please login"); return; }

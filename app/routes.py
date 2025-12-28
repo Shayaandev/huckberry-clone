@@ -175,13 +175,14 @@ def read_current_user(user: User = Depends(get_current_user)):
     return {
         "username": user.username,
         "id": user.id,
+        "is_admin": user.is_admin,
     }
 
 
 @router.get("/users", response_model=list[UserResponse], tags=["Admin"])
 def get_all_users(
     db: Session = Depends(get_db),
-    # _: User = Depends(admin_required)  uncomment when you get the swagger auth thing working
+    _: User = Depends(admin_required)
 ):
     return db.query(User).all()
 
