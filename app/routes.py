@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -9,6 +9,7 @@ from schemas import (
     ProductResponse,
     Token,
     UserCreate,
+    AdminCreateUser,
     UserLogin,
     UserResponse,
     AddToCart,
@@ -18,6 +19,7 @@ from schemas import (
     CartProduct,
     OrderResponse,
     OrderItemResponse,
+
 )
 from auth import (
     hash_password,
@@ -72,9 +74,9 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
     tags=["Products"],
 )
 def create_product(
-    name: str,
-    price: float,
-    stock: int = 0,
+    name: str = Form(...),  # ← Must be Form, not just str
+    price: float = Form(...),  # ← Must be Form
+    stock: int = Form(...),  # ← Must be Form
     image: UploadFile | None = File(None),
     db: Session = Depends(get_db),
 ):
@@ -100,9 +102,9 @@ def create_product(
 )
 def update_product(
     product_id: int,
-    name: str,
-    price: float,
-    stock: int = 0,
+    name: str = Form(...),  # ← Make sure these are Form fields
+    price: float = Form(...),
+    stock: int = Form(...),
     image: UploadFile | None = File(None),
     db: Session = Depends(get_db),
 ):
@@ -110,24 +112,19 @@ def update_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    if name is not None:
-        product.name = name
-    if price is not None:
-        product.price = price
-    if stock is not None:
-        product.stock = stock
+    product.name = name
+    product.price = price
+    product.stock = stock
 
     if image:
         file_location = f"static/images/{image.filename}"
         with open(file_location, "wb+") as f:
             f.write(image.file.read())
-
         product.image_url = f"/static/images/{image.filename}"
 
     db.commit()
     db.refresh(product)
     return product
-
 
 @router.delete(
     "/products/{product_id}", dependencies=[Depends(admin_required)], tags=["Products"]
@@ -141,7 +138,7 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     return {"message": "Product deleted successfully"}
 
 
-# ======================================= USER ROUTES ==============================================
+# ======================================= USER AND ADMIN ROUTES ==============================================
 
 
 @router.post("/auth/register", response_model=Token, tags=["Auth"])
@@ -186,6 +183,32 @@ def get_all_users(
 ):
     return db.query(User).all()
 
+@router.post("/admin/create-user", dependencies=[Depends(admin_required)], tags=["Admin"])
+def create_user_by_admin(
+    user_data: AdminCreateUser,
+    db: Session = Depends(get_db)
+):    
+    # Check if username already exists
+    existing_user = db.query(User).filter(User.username == user_data.username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    new_user = User(
+        username=user_data.username,
+        hashed_password=hash_password(user_data.password),
+        is_admin=user_data.is_admin  # This should work now
+    )
+    
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+        
+    return {
+        "message": "User created successfully",
+        "id": new_user.id,
+        "username": new_user.username,
+        "is_admin": new_user.is_admin
+    }
 
 @router.delete(
     "/users/{user_id}", dependencies=[Depends(admin_required)], tags=["Admin"]
@@ -194,6 +217,24 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Delete user's cart items first
+    cart = db.query(Cart).filter(Cart.user_id == user_id).first()
+    if cart:
+        # Delete all items in the cart
+        db.query(CartItem).filter(CartItem.cart_id == cart.id).delete()
+        # Delete the cart itself
+        db.delete(cart)
+    
+    # Delete user's orders and order items
+    orders = db.query(Order).filter(Order.user_id == user_id).all()
+    for order in orders:
+        # Delete order items
+        db.query(OrderItem).filter(OrderItem.order_id == order.id).delete()
+        # Delete the order
+        db.delete(order)
+    
+    # Finally delete the user
     db.delete(user)
     db.commit()
     return {"message": "User deleted successfully"}
@@ -389,7 +430,7 @@ def login_page():
 
 @router.get(
     "/admin-page",
-    # dependencies=[Depends(admin_required)],
+    dependencies=[Depends(admin_required)],
     tags=[
         "frontend",
     ],

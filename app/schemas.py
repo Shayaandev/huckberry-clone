@@ -43,6 +43,11 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class AdminCreateUser(BaseModel):
+    username: str
+    password: str
+    is_admin: bool = False
+
 
 # ---------------- CART SCHEMAS ----------------
 
