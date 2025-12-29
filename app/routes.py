@@ -158,7 +158,6 @@ def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
-    print(form_data.username, form_data.password)
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -430,7 +429,7 @@ def login_page():
 
 @router.get(
     "/admin-page",
-    dependencies=[Depends(admin_required)],
+    # dependencies=[Depends(admin_required)],
     tags=[
         "frontend",
     ],

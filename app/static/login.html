@@ -7,20 +7,64 @@
     <title>Login/Register</title>
     <link rel="stylesheet" href="static/css/style.css">
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 80px);
+            padding: 2rem;
+        }
+
+        .auth-wrapper {
+            display: flex;
+            gap: 3rem;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .auth-section {
+            flex: 1;
+        }
+
+        .auth-section h2 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
         form {
             margin-bottom: 20px;
         }
 
         input {
             margin: 5px 0;
-            padding: 5px;
-            width: 200px;
+            padding: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .auth-wrapper {
+                flex-direction: column;
+                gap: 2rem;
+            }
         }
     </style>
 </head>
 
 <body>
-
     <header>
         <div>
             <h2>Login or Register</h2>
@@ -32,32 +76,41 @@
         </div>
     </header>
 
-    <h2>Login</h2>
-    <form id="login-form">
-        <input type="text" placeholder="Username" id="login-username" required><br>
-        <input type="password" placeholder="Password" id="login-password" required><br>
-        <button type="submit">Login</button>
-    </form>
+    <div class="container">
+        <div class="auth-wrapper">
+            <div class="auth-section">
+                <h2>Welcome Back</h2>
+                <form id="login-form">
+                    <input type="text" placeholder="Username" id="login-username" required><br>
+                    <input type="password" placeholder="Password" id="login-password" required><br>
+                    <button type="submit">Login</button>
+                </form>
+            </div>
 
-    <h2>Register</h2>
-    <form id="register-form">
-        <input type="text" placeholder="Username" id="register-username" required><br>
-        <input type="password" placeholder="Password" id="register-password" required><br>
-        <button type="submit">Register</button>
-    </form>
-    <script src="static/js/config.js"></script>
+            <div class="auth-section">
+                <h2>Create Account</h2>
+                <form id="register-form">
+                    <input type="text" placeholder="Username" id="register-username" required><br>
+                    <input type="password" placeholder="Password" id="register-password" required><br>
+                    <button type="submit">Register</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="static/js/auth.js"></script>
     <script>
+        const API_URL = "";
+
         document.getElementById('login-form').onsubmit = async e => {
             e.preventDefault();
             const username = document.getElementById('login-username').value;
             const password = document.getElementById('login-password').value;
-
             const res = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({ username, password })
             });
-
             const data = await res.json();
             if (res.ok) {
                 localStorage.setItem('token', data.access_token);
@@ -72,13 +125,11 @@
             e.preventDefault();
             const username = document.getElementById('register-username').value;
             const password = document.getElementById('register-password').value;
-
             const res = await fetch(`${API_URL}/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             });
-
             const data = await res.json();
             if (res.ok) {
                 localStorage.setItem('token', data.access_token);
