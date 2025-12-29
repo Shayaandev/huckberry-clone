@@ -12,6 +12,7 @@ Python3 and pip
 - Initialize a virtual environement, download the required packages
 ```bash
 python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 - Start the ASGI server (cd into the app folder first)
